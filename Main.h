@@ -1,4 +1,5 @@
 void render();
+void populateRandomGradients();
 int initSDL();
 void processInput();
 float perlin(float x, float y);

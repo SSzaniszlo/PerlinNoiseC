@@ -13,9 +13,10 @@ typedef struct {
 
 #include "Main.h"
 
-const int width = 800;
-const int height = 800;
-unsigned int running;
+#define WIDTH 800
+#define HEIGHT 800
+
+int running;
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -23,13 +24,15 @@ const Uint8* keyState;
 
 float ticksCount;
 
+vector2 gradients[WIDTH][HEIGHT];
+
 int main() {
   
-  printf("Hello world");
 
   if (initSDL()) {
     running = 1;
     
+    populateRandomGradients();
     render();
 
     while (running) {
@@ -53,7 +56,7 @@ int initSDL() {
         return 0;
     }
     
-    window = SDL_CreateWindow("Test", 0, 0, width, height, 0);
+    window = SDL_CreateWindow("Test", 0, 0, WIDTH, HEIGHT, 0);
 
     if (!window) {
         SDL_Log("Enable to create window: %s", SDL_GetError());
@@ -77,20 +80,15 @@ int initSDL() {
 
 void render() {
 
-  
 
   SDL_SetRenderDrawColor(renderer,255,255,255,255);
   SDL_RenderClear(renderer);
 
-  for (int x = 0; x < width; x++) {
-    for (int y = 0; y < height; y++) {
-      float noise = perlin(x*0.25f, y*0.25f) * 255.0f;
-      SDL_RenderPresent(renderer);
+  for (int x = 0; x < WIDTH; x++) {
+    for (int y = 0; y < HEIGHT; y++) {
+      float noise = perlin(x*0.01, y*0.01) * 255.0f;
       SDL_SetRenderDrawColor(renderer, noise, noise, noise, 255);
       
-      printf("%f\n", noise);
-      
-
       SDL_RenderDrawPoint(renderer,x,y);
       
     }
@@ -108,7 +106,7 @@ void processInput() {
 
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
-            case SDL_QUIT:
+          case SDL_QUIT:
                 running = 0;
                 break;     
             default:
@@ -151,7 +149,7 @@ float perlin(float x, float y) {
 }
 
 float dotGridGradient(int ix, int iy, float x, float y) {
-  vector2 gradient = randomGradient(ix, iy);
+  vector2 gradient = gradients[ix][iy];
 
   float dx = x - (float) ix;
   float dy = y - (float) iy;
@@ -160,24 +158,23 @@ float dotGridGradient(int ix, int iy, float x, float y) {
 
 }
 
-vector2 randomGradient(int ix, int iy) {
-  
-  const unsigned w = 8 * sizeof(unsigned);
-  const unsigned s = w / 2;
+void populateRandomGradients() {
 
-  unsigned a = ix, b = iy;
+  for (int x = 0; x < WIDTH; x++) {
+    for (int y = 0; y < HEIGHT; y++) {
+      vector2 v;
+      v.x = -1+ 2*((float)rand())/ RAND_MAX;
+      v.y = -1+ 2*((float)rand())/ RAND_MAX;
+      gradients[x][y] = v; 
+    }
+  } 
 
-  a *= 3284157443; b^= a << s | a >> w-s;
-  b *= 1911520717; a ^= b << s | b >> w-s;
-  a *= 2048419325;
-  float random = a * (3.14159265 / ~(~0u >> 1)); // in [0, 2*Pi]
-  vector2 v;
-  v.x = cos(random); v.y = sin(random);
-  return v;
 }
 
+
+
 float interpolate(float a0, float a1, float w) {
-  return (a1 - a0) * w + a0;
+  return (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0;
 }
 
 
